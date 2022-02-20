@@ -15,8 +15,6 @@
 
 import socketserver
 import re
-import socket
-import sys
 import time
 import logging
 
@@ -61,6 +59,7 @@ rx_branch = re.compile(";branch=([^;]*)")
 rx_rport = re.compile(";rport$|;rport;")
 rx_contact_expires = re.compile("expires=([^;$]*)")
 rx_expires = re.compile("^Expires: (.*)$")
+
 
 # Tu su pridane zakladne spravy ktore proxy vie poslat a vedia sa upravit na custom spravy
 msg_200 = "0K"
@@ -427,17 +426,49 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 logging.warning("---")
 
 
-if __name__ == "__main__":
-    logging.basicConfig(format='%(asctime)s:%(levelname)s:%(message)s', filename='proxy.log', level=logging.INFO,
-                        datefmt='%H:%M:%S')
-    logging.info(time.strftime("%a, %d %b %Y %H:%M:%S ", time.localtime()))
-    hostname = socket.gethostname()
-    logging.info(hostname)
-    ipaddress = socket.gethostbyname(hostname)
-    if ipaddress == "127.0.0.1":
-        ipaddress = sys.argv[1]
-    logging.info(ipaddress)
-    recordroute = "Record-Route: <sip:%s:%d;lr>" % (ipaddress, PORT)
-    topvia = "Via: SIP/2.0/UDP %s:%d" % (ipaddress, PORT)
-    server = socketserver.UDPServer((HOST, PORT), UDPHandler)
-    server.serve_forever()
+# metoda ktora inicializuje logovanie, potrebuje byt v kniznici pre spravne fungovanie
+# pre potrebne dalsie vypisy vrati tento logger
+def innit_logging():
+    formatter = '%(asctime)s:%(levelname)s:%(message)s'
+
+    logger = logging.getLogger()
+    logger.setLevel(logging.NOTSET)
+
+    info_file_handler = logging.FileHandler(filename='logs\\info.log', mode='w')
+    info_file_handler.setFormatter(logging.Formatter(formatter))
+    info_file_handler.setLevel(logging.INFO)
+
+    debug_file_handler = logging.FileHandler(filename='logs\\debug.log', mode='w')
+    debug_file_handler.setFormatter(logging.Formatter(formatter))
+    debug_file_handler.setLevel(logging.DEBUG)
+
+    warning_file_handler = logging.FileHandler(filename='logs\\warning.log', mode='w')
+    warning_file_handler.setFormatter(logging.Formatter(formatter))
+    warning_file_handler.setLevel(logging.WARNING)
+
+    error_file_handler = logging.FileHandler(filename='logs\\error.log', mode='w')
+    error_file_handler.setFormatter(logging.Formatter(formatter))
+    error_file_handler.setLevel(logging.ERROR)
+
+    logger.addHandler(info_file_handler)
+    logger.addHandler(debug_file_handler)
+    logger.addHandler(warning_file_handler)
+    logger.addHandler(error_file_handler)
+
+    return logger
+
+
+# if __name__ == "__main__":
+#     logging.basicConfig(format='%(asctime)s:%(levelname)s:%(message)s', filename='proxy.log', level=logging.INFO,
+#                         datefmt='%H:%M:%S')
+#     logging.info(time.strftime("%a, %d %b %Y %H:%M:%S ", time.localtime()))
+#     hostname = socket.gethostname()
+#     logging.info(hostname)
+#     ipaddress = socket.gethostbyname(hostname)
+#     if ipaddress == "127.0.0.1":
+#         ipaddress = sys.argv[1]
+#     logging.info(ipaddress)
+#     recordroute = "Record-Route: <sip:%s:%d;lr>" % (ipaddress, PORT)
+#     topvia = "Via: SIP/2.0/UDP %s:%d" % (ipaddress, PORT)
+#     server = socketserver.UDPServer((HOST, PORT), UDPHandler)
+#     server.serve_forever()
