@@ -12,7 +12,7 @@ Rozsah povinných funkcionalít:
 Doplnkové funkcionality (ktoré môžete, ale nemusíte urobiť):
 - [ ] Možnosť zrealizovať konferenčný hovor (aspoň 3 účastníci)
 - [ ] Možnosť presmerovať hovor
-- [ ] Možnosť realizovať videohovor
-- [ ] Logovanie “denníka hovorov” – kto kedy komu volal, kedy bol ktorý hovor prijatý, kedy bol ktorý hovor ukončený, do ľubovoľného textového súboru v ľubovoľnom formáte
+- [x] Možnosť realizovať videohovor
+- [x] Logovanie “denníka hovorov” – kto kedy komu volal, kedy bol ktorý hovor prijatý, kedy bol ktorý hovor ukončený, do ľubovoľného textového súboru v ľubovoľnom formáte
 - [x] Úprava SIP stavových kódov z zdrojovom kóde proxy, napr. “486 Busy Here” zmeníte na “486 
 Obsadené”
