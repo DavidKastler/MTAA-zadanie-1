@@ -18,6 +18,8 @@ import re
 import time
 import logging
 
+diary_logger = logging.getLogger(name='diary')
+
 HOST, PORT = '0.0.0.0', 5060
 rx_register = re.compile("^REGISTER")
 rx_invite = re.compile("^INVITE")
@@ -47,7 +49,7 @@ rx_code = re.compile("^SIP/2.0 ([^ ]*)")
 rx_invalid = re.compile("^192\.168")
 rx_invalid2 = re.compile("^10\.")
 # rx_cseq = re.compile("^CSeq:")
-# rx_callid = re.compile("Call-ID: (.*)$")
+rx_callid = re.compile("Call-ID: (.*)$")
 # rx_rr = re.compile("^Record-Route:")
 rx_request_uri = re.compile("^([^ ]*) sip:([^ ]*) SIP/2.0")
 rx_route = re.compile("^Route:")
@@ -72,7 +74,7 @@ msg_488 = "Not Acceptable Here"
 msg_500 = "Server Internal Error"
 
 
-# global dictionnary
+# global dictionary
 recordroute = ""
 topvia = ""
 registrar = {}
@@ -226,9 +228,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
         header_expires = ""
         expires = 0
         validity = 0
-        authorization = ""
         index = 0
-        auth_index = 0
         data = []
         size = len(self.data)
         for line in self.data:
@@ -370,17 +370,29 @@ class UDPHandler(socketserver.BaseRequestHandler):
 
     def processRequest(self):
         # print "processRequest"
+        call_id = self.get_call_id()
         if len(self.data) > 0:
             request_uri = self.data[0]
             if rx_register.search(request_uri):
                 self.processRegister()
             elif rx_invite.search(request_uri):
+                if call_id is not None:
+                    diary_logger.info('ID: {}: {} is calling {}'.format(call_id, self.getOrigin(), self.getDestination()))
+                    print('ID: {},\t{} is calling {}'.format(call_id, self.getOrigin(), self.getDestination()))
                 self.processInvite()
             elif rx_ack.search(request_uri):
+                if call_id is not None:
+                    diary_logger.info('ID: {}: {} sent ACK, call initiated with {}'.format(call_id, self.getOrigin(), self.getDestination()))
+                    print('ID: {}: {} received ACK, call initiated with {}'.format(call_id, self.getOrigin(), self.getDestination()))
                 self.processAck()
             elif rx_bye.search(request_uri):
+                call_id = self.get_call_id()
+                if call_id is not None:
+                    diary_logger.info('ID: {}: {} sent BYE to {} ending call'.format(call_id, self.getOrigin(), self.getDestination()))
+                    print('ID: {}: {} sent BYE to {} ending call'.format(call_id, self.getOrigin(), self.getDestination()))
                 self.processNonInvite()
             elif rx_cancel.search(request_uri):
+                print('cancel')
                 self.processNonInvite()
             elif rx_options.search(request_uri):
                 self.processNonInvite()
@@ -395,11 +407,11 @@ class UDPHandler(socketserver.BaseRequestHandler):
             elif rx_update.search(request_uri):
                 self.processNonInvite()
             elif rx_subscribe.search(request_uri):
-                self.sendResponse("200" + msg_200)
+                self.sendResponse("200 " + msg_200)
             elif rx_publish.search(request_uri):
-                self.sendResponse("200" + msg_200)
+                self.sendResponse("200 " + msg_200)
             elif rx_notify.search(request_uri):
-                self.sendResponse("200" + msg_200)
+                self.sendResponse("200 " + msg_200)
             elif rx_code.search(request_uri):
                 self.processCode()
             else:
@@ -425,11 +437,20 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 hexdump(data, ' ', 16)
                 logging.warning("---")
 
+    def get_call_id(self):
+        if self.data is None:
+            return None
+
+        for line in self.data:
+            call_id = rx_callid.search(line)
+            if call_id is not None:
+                return call_id.group(1)
+
 
 # metoda ktora inicializuje logovanie, potrebuje byt v kniznici pre spravne fungovanie
 # pre potrebne dalsie vypisy vrati tento logger
 def innit_logging():
-    formatter = '%(asctime)s:%(levelname)s:%(message)s'
+    formatter = '%(asctime)s:%(levelname)s: %(message)s'
 
     logger = logging.getLogger()
     logger.setLevel(logging.NOTSET)
@@ -454,6 +475,13 @@ def innit_logging():
     logger.addHandler(debug_file_handler)
     logger.addHandler(warning_file_handler)
     logger.addHandler(error_file_handler)
+
+    # logger pre hovory
+    diary_logger.setLevel(logging.INFO)
+    diary_file_handler = logging.FileHandler(filename='logs\\diary.log', mode='w')
+    diary_file_handler.setFormatter(logging.Formatter(formatter))
+    diary_file_handler.setLevel(logging.INFO)
+    diary_logger.addHandler(diary_file_handler)
 
     return logger
 
