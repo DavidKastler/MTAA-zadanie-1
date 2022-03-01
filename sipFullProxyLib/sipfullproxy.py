@@ -78,6 +78,7 @@ msg_500 = "Server Internal Error"
 recordroute = ""
 topvia = ""
 registrar = {}
+calls_list = []
 
 
 def hexdump(chars, sep, width):
@@ -94,6 +95,37 @@ def quotechars(chars):
 
 def showtime():
     logging.debug(time.strftime("(%H:%M:%S)", time.localtime()))
+
+
+# funkcia na pridanie hovoru ak este neexituje
+def add_call_to_call_list(call_id):
+    for call in calls_list:
+        if call.id == call_id:
+            return False
+
+    new_call = Call()
+    new_call.id = call_id
+    new_call.invited = True
+    calls_list.append(new_call)
+
+    return True
+
+
+# ak hovor uz je v liste tak ho vrati
+def get_call_from_call_list(call_id):
+    for call in calls_list:
+        if call.id == call_id:
+            return call
+
+    return None
+
+
+# trieda reprezentujuca hovor
+class Call:
+    id = None
+    invited = False
+    started = False
+    ended = False
 
 
 class UDPHandler(socketserver.BaseRequestHandler):
@@ -376,18 +408,21 @@ class UDPHandler(socketserver.BaseRequestHandler):
             if rx_register.search(request_uri):
                 self.processRegister()
             elif rx_invite.search(request_uri):
-                if call_id is not None:
+                if call_id is not None and add_call_to_call_list(call_id):
                     diary_logger.info('ID: {}: {} is calling {}'.format(call_id, self.getOrigin(), self.getDestination()))
                     print('ID: {},\t{} is calling {}'.format(call_id, self.getOrigin(), self.getDestination()))
                 self.processInvite()
             elif rx_ack.search(request_uri):
-                if call_id is not None:
+                searched_call = get_call_from_call_list(call_id)
+                if call_id is not None and searched_call is not None and not searched_call.started:
+                    searched_call.started = True
                     diary_logger.info('ID: {}: {} sent ACK, call initiated with {}'.format(call_id, self.getOrigin(), self.getDestination()))
                     print('ID: {}: {} received ACK, call initiated with {}'.format(call_id, self.getOrigin(), self.getDestination()))
                 self.processAck()
             elif rx_bye.search(request_uri):
                 call_id = self.get_call_id()
-                if call_id is not None:
+                searched_call = get_call_from_call_list(call_id)
+                if call_id is not None and searched_call is not None and searched_call.invited:
                     diary_logger.info('ID: {}: {} sent BYE to {} ending call'.format(call_id, self.getOrigin(), self.getDestination()))
                     print('ID: {}: {} sent BYE to {} ending call'.format(call_id, self.getOrigin(), self.getDestination()))
                 self.processNonInvite()
