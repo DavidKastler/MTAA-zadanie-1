@@ -7,15 +7,17 @@ import socketserver
 HOST, PROXY_PORT = '0.0.0.0', 5060
 
 
+# nastavenie vlastnych sprav
 def set_custom_messages():
     sip_proxy.msg_200 = "VYBORNE"
-    sip_proxy.msg_400 = "Oprav si poziadavku laskavo"
-    sip_proxy.msg_406 = "Toto je ne-ak-cep-to-va-tel-ne"
-    sip_proxy.msg_480 = "Neotravuj ma!"
+    sip_proxy.msg_400 = "Zla poziadavka"
+    sip_proxy.msg_406 = "Ne-ak-cep-to-va-tel-ne"
+    sip_proxy.msg_480 = "Docasne nedostupne"
     sip_proxy.msg_488 = "Tuto to je neakcetpovatelne"
-    sip_proxy.msg_500 = "Nieco sa dojebalo"
+    sip_proxy.msg_500 = "Nieco sa pokazilo so serverom"
 
 
+# Touto funkciou sa zapina program
 if __name__ == "__main__":
     set_custom_messages()
 
